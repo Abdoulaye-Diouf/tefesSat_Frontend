@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "name": "bande_menacee_2030_test",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "horizon": 2030,
+        "description": "Zone fictive de test — à remplacer par bande_menacee_2030.geojson (pipeline TefesSat)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-16.5068, 16.0322],
+            [-16.5012, 16.0322],
+            [-16.5016, 16.0262],
+            [-16.5072, 16.0262],
+            [-16.5068, 16.0322]
+          ]
+        ]
+      }
+    }
+  ]
+}
