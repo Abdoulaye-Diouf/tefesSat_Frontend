@@ -5,21 +5,17 @@ import { useEffect, useState } from 'react'
  * @param {string | null | undefined} url
  */
 export function useGeoJson(url) {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(Boolean(url))
-  const [error, setError] = useState(null)
+  const [result, setResult] = useState({
+    url: null,
+    data: null,
+    error: null,
+    loading: false,
+  })
 
   useEffect(() => {
-    if (!url) {
-      setData(null)
-      setLoading(false)
-      setError(null)
-      return
-    }
+    if (!url) return
 
     let cancelled = false
-    setLoading(true)
-    setError(null)
 
     fetch(url)
       .then((response) => {
@@ -29,16 +25,19 @@ export function useGeoJson(url) {
         return response.json()
       })
       .then((json) => {
-        if (!cancelled) setData(json)
+        if (!cancelled) {
+          setResult({ url, data: json, error: null, loading: false })
+        }
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err : new Error(String(err)))
-          setData(null)
+          setResult({
+            url,
+            data: null,
+            error: err instanceof Error ? err : new Error(String(err)),
+            loading: false,
+          })
         }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
       })
 
     return () => {
@@ -46,5 +45,8 @@ export function useGeoJson(url) {
     }
   }, [url])
 
-  return { data, loading, error }
+  if (result.url !== url) {
+    return { data: null, loading: Boolean(url), error: null }
+  }
+  return { data: result.data, loading: result.loading, error: result.error }
 }

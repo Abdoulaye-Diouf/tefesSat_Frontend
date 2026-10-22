@@ -1,186 +1,172 @@
-/** @param {{ x: number; y: number }[]} points */
-function buildSmoothLinePath(points) {
-  if (points.length === 0) return ''
-  if (points.length === 1) return `M ${points[0].x},${points[0].y}`
+import { AudioButton } from '../AudioButton'
 
-  let d = `M ${points[0].x},${points[0].y}`
-  for (let i = 0; i < points.length - 1; i += 1) {
-    const p0 = points[i - 1] ?? points[i]
-    const p1 = points[i]
-    const p2 = points[i + 1]
-    const p3 = points[i + 2] ?? p2
-    const cp1x = p1.x + (p2.x - p0.x) / 6
-    const cp1y = p1.y + (p2.y - p0.y) / 6
-    const cp2x = p2.x - (p3.x - p1.x) / 6
-    const cp2y = p2.y - (p3.y - p1.y) / 6
-    d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`
-  }
+const WIDTH = 320
+const HEIGHT = 160
+const PADDING = { top: 16, right: 12, bottom: 32, left: 48 }
+
+function createLineSegments(points) {
+  const segments = []
+  let current = []
+
+  points.forEach((point) => {
+    if (!point) {
+      if (current.length) segments.push(current)
+      current = []
+    } else {
+      current.push(point)
+    }
+  })
+
+  if (current.length) segments.push(current)
+  return segments
+}
+
+function formatAxisDate(d) {
+  if (!d) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d.slice(0, 7)
   return d
 }
 
-const MAX_Y_TICKS = 5
-const MIN_TICK_LABEL_GAP_PX = 24
+export function TransectHistoryChart({
+  series,
+  mode = 'annee',
+  language = 'fr',
+  playAudio,
+}) {
+  const isWolof = language === 'wo'
+  const valid = series
+    ?.map((point, index) =>
+      point.reculM == null ? null : { ...point, index },
+    )
+    .filter(Boolean)
 
-/** Pas « rond » pour limiter le nombre de graduations (évite le chevauchement). */
-function niceStepSize(span, maxTicks) {
-  const rough = span / Math.max(maxTicks - 1, 1)
-  if (rough <= 0 || !Number.isFinite(rough)) return 1
-  const exp = Math.floor(Math.log10(rough))
-  const base = 10 ** exp
-  const frac = rough / base
-  let niceFrac = 10
-  if (frac <= 1) niceFrac = 1
-  else if (frac <= 2) niceFrac = 2
-  else if (frac <= 5) niceFrac = 5
-  return niceFrac * base
-}
-
-function formatYTick(value, step) {
-  if (step >= 1) return String(Math.round(value))
-  if (step >= 0.1) return value.toFixed(1)
-  return value.toFixed(2)
-}
-
-function computeYScale(values) {
-  const dataMin = Math.min(...values)
-  const dataMax = Math.max(...values, 0)
-  const rawSpan = dataMax - dataMin || 1
-  const margin = rawSpan * 0.06
-
-  let yMin = dataMin - margin
-  let yMax = dataMax + margin
-  let step = niceStepSize(yMax - yMin, MAX_Y_TICKS)
-
-  yMin = Math.floor(yMin / step) * step
-  yMax = Math.ceil(yMax / step) * step
-
-  let ticks = []
-  for (let v = yMin; v <= yMax + step * 0.001; v += step) {
-    ticks.push(Math.round(v * 1000) / 1000)
-  }
-
-  while (ticks.length > MAX_Y_TICKS) {
-    step *= 2
-    yMin = dataMin - margin
-    yMax = dataMax + margin
-    yMin = Math.floor(yMin / step) * step
-    yMax = Math.ceil(yMax / step) * step
-    ticks = []
-    for (let v = yMin; v <= yMax + step * 0.001; v += step) {
-      ticks.push(Math.round(v * 1000) / 1000)
-    }
-  }
-
-  return { yMin, yMax, ticks, step }
-}
-
-/** Ne garde que les ticks suffisamment espacés en pixels. */
-function filterTicksForDisplay(ticks, toY, innerHeight) {
-  if (ticks.length <= 2) return ticks
-
-  const minGap = Math.max(
-    MIN_TICK_LABEL_GAP_PX,
-    innerHeight / (MAX_Y_TICKS - 1),
-  )
-
-  const filtered = []
-  let lastY = null
-  for (const tick of ticks) {
-    const y = toY(tick)
-    if (lastY == null || Math.abs(y - lastY) >= minGap * 0.85) {
-      filtered.push(tick)
-      lastY = y
-    }
-  }
-
-  if (filtered.length >= 2) return filtered
-  return [ticks[0], ticks[ticks.length - 1]]
-}
-
-/**
- * Courbe d’évolution du recul (area chart SVG, style maquette).
- */
-export function TransectHistoryChart({ series }) {
-  if (!series?.length) {
+  if (!valid?.length) {
     return (
       <p className="detail-panel__chart-empty">
-        Historique insuffisant pour le graphique
+        {isWolof
+          ? 'Amul limu tefes bi ci pàcc bii.'
+          : 'Aucune mesure historique disponible pour ce transect.'}
       </p>
     )
   }
 
-  const width = 288
-  const height = 148
-  const pad = { top: 12, right: 10, bottom: 28, left: 42 }
-  const innerW = width - pad.left - pad.right
-  const innerH = height - pad.top - pad.bottom
-
-  const years = series.map((p) => p.year)
-  const values = series.map((p) => p.reculM)
-  const { yMin, yMax, step, ticks: scaleTicks } = computeYScale(values)
-  const ySpan = yMax - yMin || 1
-  const xSpan = years[years.length - 1] - years[0] || 1
-
-  const toX = (year) => pad.left + ((year - years[0]) / xSpan) * innerW
-  const toY = (v) => pad.top + ((yMax - v) / ySpan) * innerH
-
-  const ticks = filterTicksForDisplay(scaleTicks, toY, innerH)
-
-  const points = series.map((p) => ({ x: toX(p.year), y: toY(p.reculM) }))
-  const linePath = buildSmoothLinePath(points)
-  const baselineY = toY(yMin)
-  const areaPath = `${linePath} L ${points[points.length - 1].x},${baselineY} L ${points[0].x},${baselineY} Z`
-
-  const gradientId = 'transect-recul-gradient'
+  const values = valid.map((point) => point.reculM)
+  const dataMin = Math.min(0, ...values)
+  const dataMax = Math.max(0, ...values)
+  const span = dataMax - dataMin || 1
+  const yMin = dataMin - span * 0.08
+  const yMax = dataMax + span * 0.08
+  const innerWidth = WIDTH - PADDING.left - PADDING.right
+  const innerHeight = HEIGHT - PADDING.top - PADDING.bottom
+  const toX = (index) =>
+    PADDING.left +
+    (series.length > 1 ? (index / (series.length - 1)) * innerWidth : innerWidth / 2)
+  const toY = (value) =>
+    PADDING.top + ((yMax - value) / (yMax - yMin)) * innerHeight
+  const points = series.map((point, index) =>
+    point.reculM == null
+      ? null
+      : { x: toX(index), y: toY(point.reculM), value: point.reculM },
+  )
+  const segments = createLineSegments(points)
+  const tickValues = [yMin, (yMin + yMax) / 2, yMax]
+  const labelIndexes = [
+    0,
+    Math.round((series.length - 1) / 2),
+    series.length - 1,
+  ]
+  const format = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
 
   return (
-    <svg
-      className="detail-panel__chart"
-      viewBox={`0 0 ${width} ${height}`}
-      role="img"
-      aria-label="Évolution du recul du trait de côte"
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-
-      {ticks.map((tick) => (
-        <g key={tick}>
-          <line
-            x1={pad.left}
-            x2={width - pad.right}
-            y1={toY(tick)}
-            y2={toY(tick)}
-            className="detail-panel__chart-grid"
+    <div className="detail-panel__chart-container">
+      <p className="detail-panel__chart-title">
+        {isWolof
+          ? 'Fi tefes bi nekkoon at mu nekk'
+          : mode === 'date'
+            ? 'Recul mesuré par passage satellite (m)'
+            : 'Recul mesuré depuis 2015 (médiane annuelle, m)'}
+        {isWolof ? (
+          <AudioButton
+            file="wo_historique"
+            playAudio={playAudio}
+            label="Fi tefes bi nekkoon at mu nekk"
           />
+        ) : null}
+      </p>
+      <svg
+        className="detail-panel__chart"
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        role="img"
+        aria-label={
+          isWolof
+            ? 'Soppi gi ci fi tefes bi nekkoon'
+            : 'Évolution mesurée de la position du trait de côte'
+        }
+      >
+        {tickValues.map((tick) => (
+          <g key={tick}>
+            <line
+              x1={PADDING.left}
+              x2={WIDTH - PADDING.right}
+              y1={toY(tick)}
+              y2={toY(tick)}
+              className="detail-panel__chart-grid"
+            />
+            <text
+              x={PADDING.left - 6}
+              y={toY(tick) + 3}
+              className="detail-panel__chart-axis"
+              textAnchor="end"
+            >
+              {format.format(tick)}
+            </text>
+          </g>
+        ))}
+        {segments.map((segment, index) =>
+          segment.length > 1 ? (
+            <polyline
+              key={`segment-${index}`}
+              points={segment.map((point) => `${point.x},${point.y}`).join(' ')}
+              className="detail-panel__chart-line"
+            />
+          ) : null,
+        )}
+        {points.map((point, index) =>
+          point ? (
+            <circle
+              key={`${series[index].date}-${index}`}
+              cx={point.x}
+              cy={point.y}
+              r="2.5"
+              className="detail-panel__chart-point"
+            >
+              <title>{`${series[index].date} : ${point.value > 0 ? '+' : ''}${format.format(point.value)} m`}</title>
+            </circle>
+          ) : null,
+        )}
+        {labelIndexes.map((index) => (
           <text
-            x={pad.left - 8}
-            y={toY(tick) + 3}
-            className="detail-panel__chart-axis detail-panel__chart-axis--y"
-            textAnchor="end"
+            key={`${index}-${series[index]?.date}`}
+            x={toX(index)}
+            y={HEIGHT - 8}
+            className="detail-panel__chart-axis"
+            textAnchor={
+              index === 0
+                ? 'start'
+                : index === series.length - 1
+                  ? 'end'
+                  : 'middle'
+            }
           >
-            {formatYTick(tick, step)}
+            {formatAxisDate(series[index]?.date)}
           </text>
-        </g>
-      ))}
-
-      <path d={areaPath} className="detail-panel__chart-area" fill={`url(#${gradientId})`} />
-      <path d={linePath} className="detail-panel__chart-line" fill="none" />
-
-      {years.map((year) => (
-        <text
-          key={year}
-          x={toX(year)}
-          y={height - 8}
-          className="detail-panel__chart-axis detail-panel__chart-axis--x"
-          textAnchor="middle"
-        >
-          {year}
-        </text>
-      ))}
-    </svg>
+        ))}
+      </svg>
+      <p className="detail-panel__chart-note">
+        {isWolof
+          ? 'Lim yu yokku : tefes bi jëm ci suuf si.'
+          : 'Valeurs positives : déplacement vers la terre (recul net).'}
+      </p>
+    </div>
   )
 }

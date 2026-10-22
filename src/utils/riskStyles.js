@@ -1,15 +1,13 @@
 /**
- * Couleurs et épaisseurs des transects selon le niveau de risque.
- * Compatible avec les libellés du pipeline (faible, moyen, élevé, très élevé)
- * et les données de test (Faible, Modéré, Critique, etc.).
+ * Couleurs des transects selon « risque » (pipeline TefesSat, guide section 6).
  */
 
 const RISK_PALETTE = {
-  faible: { color: '#22c55e', label: 'Faible' },
-  moyen: { color: '#eab308', label: 'Moyen' },
-  eleve: { color: '#f97316', label: 'Élevé' },
-  tres_eleve: { color: '#ef4444', label: 'Très élevé' },
-  critique: { color: '#7f1d1d', label: 'Critique' },
+  faible: { color: '#2E7D32', label: 'Faible' },
+  moyen: { color: '#F9A825', label: 'Moyen' },
+  eleve: { color: '#EF6C00', label: 'Élevé' },
+  tres_eleve: { color: '#C62828', label: 'Très élevé' },
+  non_evalue: { color: '#9E9E9E', label: 'Non évalué' },
   inconnu: { color: '#64748b', label: 'Non classé' },
 }
 
@@ -22,7 +20,8 @@ export function normalizeRiskKey(raw) {
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
 
-  if (s.includes('critique')) return 'critique'
+  if (s.includes('non evalue')) return 'non_evalue'
+  if (s.includes('critique')) return 'tres_eleve'
   if (s.includes('tres eleve') || s === 'tres_eleve') return 'tres_eleve'
   if (s.includes('eleve') || s === 'eleve') return 'eleve'
   if (s.includes('modere') || s.includes('moyen')) return 'moyen'
@@ -43,7 +42,20 @@ export function getRiskLabel(rawRisk) {
 /** Libellé bandeau panneau latéral, ex. « RISQUE CRITIQUE ». */
 export function getRiskBannerLabel(rawRisk) {
   const label = getRiskLabel(rawRisk)
-  return label === 'Non classé' ? 'RISQUE NON CLASSÉ' : `RISQUE ${label.toUpperCase()}`
+  if (label === 'Non classé') return 'RISQUE NON CLASSÉ'
+  return `RISQUE ${label.toUpperCase()}`
+}
+
+export function getRiskWolofLabel(rawRisk) {
+  const labels = {
+    faible: 'Njàqare tuuti',
+    moyen: 'Njàqare bu yem',
+    eleve: 'Njàqare bu mag',
+    tres_eleve: 'Njàqare bu mag lool',
+    non_evalue: 'Xamuñu ko ba léegi',
+    inconnu: 'Xamuñu ko ba léegi',
+  }
+  return labels[normalizeRiskKey(rawRisk)]
 }
 
 /** Style Leaflet pour un transect (LineString). */
@@ -66,5 +78,5 @@ export const LEGEND_ITEMS = [
   RISK_PALETTE.moyen,
   RISK_PALETTE.eleve,
   RISK_PALETTE.tres_eleve,
-  RISK_PALETTE.critique,
+  RISK_PALETTE.non_evalue,
 ]

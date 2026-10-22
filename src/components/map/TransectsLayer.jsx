@@ -1,12 +1,19 @@
 import { useCallback, useMemo } from 'react'
 import { GeoJSON } from 'react-leaflet'
 import { transectLineStyle } from '../../utils/riskStyles'
+import { getRiskWolofLabel } from '../../utils/riskStyles'
 import { getTransectId } from '../../utils/transectFeature'
 
 /**
  * Transects perpendiculaires à la côte, colorés selon le risque et cliquables.
  */
-export function TransectsLayer({ data, selectedId, onSelectTransect }) {
+export function TransectsLayer({
+  data,
+  selectedId,
+  language = 'fr',
+  onSelectTransect,
+}) {
+  const isWolof = language === 'wo'
   const style = useCallback(
     (feature) => transectLineStyle(feature, { selectedId }),
     [selectedId],
@@ -26,12 +33,14 @@ export function TransectsLayer({ data, selectedId, onSelectTransect }) {
             feature.properties?.risque ??
             feature.properties?.niveau_risque ??
             '—'
-          return `<strong>${id ?? 'Transect'}</strong><br/>Risque : ${risque}`
+          return isWolof
+            ? `<strong>${id ?? 'Pàcc'}</strong><br/>Njàqare : ${getRiskWolofLabel(risque)}`
+            : `<strong>${id ?? 'Transect'}</strong><br/>Risque : ${risque}`
         },
         { sticky: true, direction: 'top' },
       )
     },
-    [onSelectTransect],
+    [isWolof, onSelectTransect],
   )
 
   const layerKey = useMemo(

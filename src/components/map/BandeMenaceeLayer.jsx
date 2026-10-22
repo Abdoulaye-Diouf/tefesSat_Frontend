@@ -1,21 +1,21 @@
 import { GeoJSON } from 'react-leaflet'
 
 const bandeStyle = {
-  color: '#2563eb',
-  weight: 2,
-  fillColor: '#3b82f6',
-  fillOpacity: 0.25,
+  color: '#b91c1c',
+  weight: 1,
+  fillColor: '#dc2626',
+  fillOpacity: 0.22,
 }
 
 /**
- * Polygone de la bande menacée d'ici 2030 (submersion / érosion projetée).
+ * Polygones de la bande menacée (2035 par défaut, voir dataSources).
  */
-export function BandeMenaceeLayer({ data }) {
+export function BandeMenaceeLayer({ data, year }) {
   if (!data?.features?.length) return null
 
   return (
     <GeoJSON
-      key={data.features.length}
+      key={year}
       data={data}
       style={() => bandeStyle}
     />

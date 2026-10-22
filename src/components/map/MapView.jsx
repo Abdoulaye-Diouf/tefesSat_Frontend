@@ -1,17 +1,24 @@
 import { MapContainer, TileLayer } from 'react-leaflet'
 import { BASE_LAYERS, DEFAULT_CENTER, DEFAULT_ZOOM } from '../../config/mapConfig'
+import { BatimentsMenacesLayer } from './BatimentsMenacesLayer'
 import { BandeMenaceeLayer } from './BandeMenaceeLayer'
 import { FitMapBounds } from './FitMapBounds'
 import { MapLegend } from './MapLegend'
+import { TraitsDeCoteLayer } from './TraitsDeCoteLayer'
 import { TransectsLayer } from './TransectsLayer'
 
 /**
  * Carte principale du tableau de bord (react-leaflet).
  */
 export function MapView({
+  language = 'fr',
+  playAudio,
   baseLayerId = 'osm',
   transectsGeoJson,
   bandeGeoJson,
+  batimentsGeoJson,
+  traitsGeoJson,
+  year,
   selectedTransectId,
   onSelectTransect,
   recenterRequest,
@@ -36,14 +43,22 @@ export function MapView({
           bandeGeoJson={bandeGeoJson}
           recenterRequest={recenterRequest}
         />
-        <BandeMenaceeLayer data={bandeGeoJson} />
+        <BandeMenaceeLayer data={bandeGeoJson} year={year} />
+        <BatimentsMenacesLayer data={batimentsGeoJson} year={year} />
+        <TraitsDeCoteLayer data={traitsGeoJson} />
         <TransectsLayer
           data={transectsGeoJson}
           selectedId={selectedTransectId}
+          language={language}
           onSelectTransect={onSelectTransect}
         />
       </MapContainer>
-      <MapLegend />
+      <MapLegend
+        year={year}
+        language={language}
+        playAudio={playAudio}
+        showBuildings={Boolean(batimentsGeoJson?.features?.length)}
+      />
     </div>
   )
 }

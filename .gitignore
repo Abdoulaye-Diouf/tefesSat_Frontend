@@ -1,3 +1,5 @@
 node_modules/
 dist/
 .env
+# Lien local vers ../TefesSat/resultats (voir README)
+# public/resultats/
