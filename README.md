@@ -10,9 +10,12 @@ Carte **Leaflet** (react-leaflet) + panneau de détail par transect, alimenté p
 - Couche **transects** (segments perpendiculaires à la côte) colorés selon le **niveau de risque**
 - Couches **bande menacée** et **bâtiments menacés**, sélectionnables pour 2030 ou 2035
 - **Résumé par quartier** : vitesses, altitude, marge avant les maisons et exposition
+- Panneau **« Où agir en premier ? »** avec les zones prioritaires; un clic centre la carte sur la zone concernée
+- Liens vers la fiche PDF de la mairie et vers les fiches PDF disponibles par quartier
+- Vidéo de présentation ouverte dans une fenêtre intégrée avec commandes de lecture
 - **Clic** sur un transect → fiche latérale (risque, vitesse et recul net, bâtiments menacés, période d’observation, alerte)
 - Projections des bâtiments en **2030 et 2035** distinguant les bâtiments et habitants concernés, l’absence d’atteinte avec la marge projetée, et les projections non évaluées avec leur motif et la marge actuelle
-- Courbe historique fondée sur les positions mesurées par date dans `positions_pivot.csv`
+- Courbe historique fondée sur les positions mesurées dans `positions_par_annee.csv` et `positions_par_date.csv`
 - **Zoom automatique** sur l’emprise des données + bouton **Recentrer**
 - Légende des niveaux de risque
 - Bascule **FR | WO** et lecture des textes wolof associés aux vocaux disponibles dans `public/audio/` ; le message d’introduction est joué en trois parties
@@ -49,7 +52,7 @@ src/
 ├── config/
 │   dataSources.js    # chemins des GeoJSON et CSV du pipeline
 │   mapConfig.js        # centre, zoom, fonds de carte, options fitBounds
-├── data/               # jeux de test (GeoJSON)
+├── data/               # données GeoJSON locales
 ├── hooks/
 │   useGeoJson.js       # chargement async des GeoJSON
 │   useCsv.js           # chargement et parsing CSV
@@ -60,16 +63,18 @@ src/
 └── utils/              # styles de risque, propriétés unifiées, bbox
 ```
 
-## Données de test
+## Ressources pour la mairie et le public
 
-Fichiers actuels dans `src/data/` :
+Les ressources placées dans `public/` sont servies directement par Vite :
 
-| Fichier | Description |
-|---------|-------------|
-| `transects_test.geojson` | Transects fictifs (Guet Ndar) |
-| `bande_menacee_test.geojson` | Polygone de zone menacée (test) |
+| Ressource | Emplacement |
+|-----------|-------------|
+| Fiche générale destinée à la mairie | `public/fiches/fiche_mairie.pdf` |
+| Fiches disponibles par quartier | `public/fiches/fiche_<quartier>.pdf` |
+| Vidéo de présentation | `public/video_tefessat.mp4` |
+| Zones prioritaires et coordonnées de la carte | `public/resultats/priorites_mairie.csv` |
 
-**Ces données sont fictives** : à remplacer par les sorties réelles du pipeline avant présentation au jury.
+Les liens de quartier ne sont affichés que pour les fiches PDF disponibles. Les indicateurs présentés dans les cartes de priorité sont volontairement limités au quartier, aux tronçons, à l’échéance estimée et aux bâtiments et habitants concernés.
 
 ## Brancher les GeoJSON du pipeline TefesSat
 
@@ -85,8 +90,7 @@ Fichiers actuels dans `src/data/` :
    - `resume_par_quartier.csv`
    - `positions_par_annee.csv`
    - `positions_par_date.csv`
-
-Voir aussi `Guide_fichiers_resultats_tableau_de_bord.docx` à la racine de PROJET-SENSAT.
+   - `priorites_mairie.csv`
 
 Les sorties pipeline sont en **WGS84** (EPSG:4326), compatibles Leaflet.
 

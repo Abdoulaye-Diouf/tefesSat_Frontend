@@ -2,6 +2,7 @@ import { MapContainer, TileLayer } from 'react-leaflet'
 import { BASE_LAYERS, DEFAULT_CENTER, DEFAULT_ZOOM } from '../../config/mapConfig'
 import { BatimentsMenacesLayer } from './BatimentsMenacesLayer'
 import { BandeMenaceeLayer } from './BandeMenaceeLayer'
+import { CenterMapOnPoint } from './CenterMapOnPoint'
 import { FitMapBounds } from './FitMapBounds'
 import { MapLegend } from './MapLegend'
 import { TraitsDeCoteLayer } from './TraitsDeCoteLayer'
@@ -22,6 +23,7 @@ export function MapView({
   selectedTransectId,
   onSelectTransect,
   recenterRequest,
+  mapFocusRequest,
 }) {
   const base = BASE_LAYERS[baseLayerId] ?? BASE_LAYERS.osm
 
@@ -43,6 +45,7 @@ export function MapView({
           bandeGeoJson={bandeGeoJson}
           recenterRequest={recenterRequest}
         />
+        <CenterMapOnPoint request={mapFocusRequest} />
         <BandeMenaceeLayer data={bandeGeoJson} year={year} />
         <BatimentsMenacesLayer data={batimentsGeoJson} year={year} />
         <TraitsDeCoteLayer data={traitsGeoJson} />

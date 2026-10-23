@@ -5,6 +5,8 @@ import { AudioButton } from '../AudioButton'
 import { useAudioPlayer } from '../../hooks/useAudioPlayer'
 import { useCsv } from '../../hooks/useCsv'
 import { useGeoJson } from '../../hooks/useGeoJson'
+import { PrioritiesPanel } from './PrioritiesPanel'
+import { VideoModal } from './VideoModal'
 import {
   getHistoricalSeries,
   getTransectId,
@@ -21,8 +23,11 @@ export function Dashboard() {
   const [baseLayerId, setBaseLayerId] = useState('osm')
   const [year, setYear] = useState(2035)
   const [showDistrictSummary, setShowDistrictSummary] = useState(false)
+  const [showPriorities, setShowPriorities] = useState(false)
+  const [showVideo, setShowVideo] = useState(false)
   const [selectedFeature, setSelectedFeature] = useState(null)
   const [recenterRequest, setRecenterRequest] = useState(0)
+  const [mapFocusRequest, setMapFocusRequest] = useState(null)
   const { playSequence: playAudio, audioError } = useAudioPlayer()
   const isWolof = language === 'wo'
 
@@ -68,6 +73,12 @@ export function Dashboard() {
     error: errorHistoryDate,
   } = useCsv(GEOJSON_SOURCES.positionsParDate)
 
+  const {
+    rows: priorityRows,
+    loading: loadingPriorities,
+    error: errorPriorities,
+  } = useCsv(GEOJSON_SOURCES.prioritesMairie)
+
   const selectedTransectId = useMemo(
     () =>
       selectedFeature
@@ -98,6 +109,42 @@ export function Dashboard() {
     setSelectedFeature(null)
   }, [])
 
+  const handlePriorityFocus = useCallback(({ latitude, longitude }) => {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return
+    setSelectedFeature(null)
+    setShowDistrictSummary(false)
+    setShowPriorities(false)
+    setMapFocusRequest((current) => ({
+      latitude,
+      longitude,
+      sequence: (current?.sequence ?? 0) + 1,
+    }))
+  }, [])
+
+  const handleCloseVideo = useCallback(() => {
+    setShowVideo(false)
+  }, [])
+
+  const handleTogglePriorities = useCallback(() => {
+    setShowPriorities((visible) => {
+      if (!visible) {
+        setShowDistrictSummary(false)
+        setSelectedFeature(null)
+      }
+      return !visible
+    })
+  }, [])
+
+  const handleToggleDistrictSummary = useCallback(() => {
+    setShowDistrictSummary((visible) => {
+      if (!visible) {
+        setShowPriorities(false)
+        setSelectedFeature(null)
+      }
+      return !visible
+    })
+  }, [])
+
   const isLoading =
     loadingTransects ||
     loadingBande ||
@@ -105,7 +152,8 @@ export function Dashboard() {
     loadingTraits ||
     loadingDistricts ||
     loadingHistoryAnnee ||
-    loadingHistoryDate
+    loadingHistoryDate ||
+    loadingPriorities
   const loadErrors = [
     errorTransects,
     errorBande,
@@ -114,6 +162,7 @@ export function Dashboard() {
     errorDistricts,
     errorHistoryAnnee,
     errorHistoryDate,
+    errorPriorities,
   ].filter(Boolean)
   const hasMapData = Boolean(
     transectsGeoJson?.features?.length ||
@@ -216,7 +265,7 @@ export function Dashboard() {
           <button
             type="button"
             className="dashboard__recenter"
-            onClick={() => setShowDistrictSummary((show) => !show)}
+            onClick={handleToggleDistrictSummary}
             aria-expanded={showDistrictSummary}
             aria-controls="district-summary-title"
             disabled={!districtRows?.length}
@@ -251,6 +300,36 @@ export function Dashboard() {
               />
             </div>
           ) : null}
+          <a
+            className="dashboard__recenter dashboard__header-link dashboard__header-link--pdf"
+            href={`${import.meta.env.BASE_URL}fiches/fiche_mairie.pdf`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {isWolof ? 'Fiches mairie (PDF)' : 'Fiches pour la mairie (PDF)'}
+          </a>
+          <button
+            type="button"
+            className="dashboard__recenter dashboard__header-link"
+            onClick={() => setShowVideo(true)}
+          >
+            <span aria-hidden="true">▶</span>
+            {isWolof ? 'Voir la vidéo' : 'Voir la vidéo'}
+          </button>
+          <button
+            type="button"
+            className="dashboard__recenter dashboard__header-link dashboard__header-link--priority"
+            onClick={handleTogglePriorities}
+            aria-expanded={showPriorities}
+            aria-controls="priorities-panel"
+            disabled={!priorityRows?.length}
+          >
+            {showPriorities
+              ? isWolof
+                ? 'Nëbbal njàngat yi'
+                : 'Masquer les priorités'
+              : 'Où agir en premier ?'}
+          </button>
           <button
             type="button"
             className="dashboard__recenter"
@@ -317,7 +396,16 @@ export function Dashboard() {
             selectedTransectId={selectedTransectId}
             onSelectTransect={handleSelectTransect}
             recenterRequest={recenterRequest}
+            mapFocusRequest={mapFocusRequest}
           />
+          {showPriorities ? (
+            <PrioritiesPanel
+              rows={priorityRows}
+              language={language}
+              onFocus={handlePriorityFocus}
+              onClose={() => setShowPriorities(false)}
+            />
+          ) : null}
           {showDistrictSummary ? (
             <DistrictSummary
               rows={districtRows}
@@ -339,6 +427,7 @@ export function Dashboard() {
           />
         </div>
       </div>
+      {showVideo ? <VideoModal onClose={handleCloseVideo} /> : null}
     </div>
   )
 }

@@ -2,7 +2,7 @@
  * Chemins des jeux de données GeoJSON (dossier public/resultats/, lié au dépôt TefesSat).
  * Après un git pull sur TefesSat, les fichiers sont servis automatiquement en local.
  */
-/** @type {{ transects: string; bandeMenacee: Record<number, string>; batimentsMenaces: Record<number, string>; traitsDeCote: string; resumeQuartiers: string; positionsParAnnee: string; positionsParDate: string; positionsPivot: string }} */
+/** @type {{ transects: string; bandeMenacee: Record<number, string>; batimentsMenaces: Record<number, string>; traitsDeCote: string; resumeQuartiers: string; positionsParAnnee: string; positionsParDate: string; positionsPivot: string; prioritesMairie: string }} */
 export const GEOJSON_SOURCES = {
   transects: '/resultats/transects_resultats.geojson',
   bandeMenacee: {
@@ -18,4 +18,5 @@ export const GEOJSON_SOURCES = {
   positionsParAnnee: '/resultats/positions_par_annee.csv',
   positionsParDate: '/resultats/positions_par_date.csv',
   positionsPivot: '/resultats/positions_par_annee.csv',
+  prioritesMairie: '/resultats/priorites_mairie.csv',
 }

@@ -11,11 +11,13 @@ import {
   formatReculNetM,
   formatVitesseReculMAn,
   getObservationSummary,
+  getQuartier,
   getNiveauRisque,
   getReculEstimeM,
   getTronconTitle,
   getVitesseReculMAn,
 } from '../../utils/transectFeature'
+import { getDistrictPdfUrl } from '../../utils/districtFiles'
 import { TransectHistoryChart } from './TransectHistoryChart'
 
 function IconTrendDown() {
@@ -210,6 +212,7 @@ export function TransectDetailPanel({
   const title = isWolof
     ? getTronconTitle(props).replace(/^Tronçon/, 'Pàcc')
     : getTronconTitle(props)
+  const districtPdfUrl = getDistrictPdfUrl(getQuartier(props))
   const risque = getNiveauRisque(props)
   const riskKey = normalizeRiskKey(risque)
   const vitesse = getVitesseReculMAn(props)
@@ -265,6 +268,16 @@ export function TransectDetailPanel({
         {isWolof ? 'Pàcc ci tefes bi' : 'Tronçon côtier'}
       </p>
       <h2 className="detail-panel__title">{title}</h2>
+      {districtPdfUrl ? (
+        <a
+          className="detail-panel__district-pdf"
+          href={districtPdfUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {isWolof ? 'Yebal fiche gox (PDF)' : 'Fiche du quartier (PDF)'}
+        </a>
+      ) : null}
 
       <div
         className={`detail-panel__risk-banner detail-panel__risk-banner--${riskKey}`}
